@@ -7,6 +7,13 @@
 *.o
 *.obj
 
+# Default Makefile output binary
+pomodoro
+
+# Devlopment Environment stuff
+compile_commands.json
+.cache/*
+
 # Precompiled Headers
 *.gch
 *.pch

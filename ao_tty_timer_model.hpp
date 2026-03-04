@@ -6,8 +6,7 @@
 //  Copyright © 2018 Altynbek Orumbayev. All rights reserved.
 //
 
-#ifndef ao_tty_timer_hpp
-#define ao_tty_timer_hpp
+#pragma once
 
 #include <stdio.h>
 #include <string>
@@ -25,7 +24,8 @@
  * This method converts integer minutes into an std::string with format hh:mm:ss
  * @param minutes gets time in minutes.
  */
-std::string formatted_time(int minutes) {
+std::string formatted_time(int minutes)
+{
     int hour, min, sec, time = minutes * 60;
     hour = time/3600;
     time = time%3600;
@@ -43,8 +43,8 @@ std::string formatted_time(int minutes) {
 }
 
 //MARK: - PomodoroTimer class declaration
-class PomodoroTimer {
-    
+class PomodoroTimer
+{
 private:
     // Used to represent current motivational quote
     // that needs to be used as a label under clock.
@@ -62,13 +62,14 @@ private:
     
     // Map storing quotes and current execution mode per timer
     std::map<int, TimeOptions> timer_state;
-    std::vector<int> timer_break_conters;
+    std::vector<int> timer_break_counters;
     
     // Number of quotes const int
-    static const int NUM_QUOTES = 5;
+    static constexpr int NUM_QUOTES = 5;
     
     // Vectors storing simple quotes for work mode
-    const std::string work_quotes[NUM_QUOTES] {
+    const std::string work_quotes[NUM_QUOTES]
+    {
         "Keep pushing!",
         "You can do it!",
         "Do work. Now!",
@@ -77,8 +78,9 @@ private:
     };
     
     // Vectors storing simple quotes for break mode
-    const std::string break_quotes[NUM_QUOTES]  {
-        "Chill. Now!",
+    const std::string break_quotes[NUM_QUOTES]
+    {
+        "Saying your own name out loud should make you feel motivated and excited.",
         "Get some coffee!",
         "Relax for a bit.",
         "Go have a power nap!"
@@ -86,12 +88,13 @@ private:
     };
     
     // Timer states initialization
-    void init_timer_states() {
+    void init_timer_states()
+    {
         timer_state.clear();
-        timer_break_conters.clear();
+        timer_break_counters.clear();
         for (int i = 0; i < num_of_timers; i++) {
             timer_state.emplace(i, TimeOptions::ShortBreak);
-            timer_break_conters.push_back(0);
+            timer_break_counters.push_back(0);
         }
     }
     
@@ -106,14 +109,18 @@ private:
     }
     
     // Updates indexes for extracting random quotes
-    void update_random_quote_indexes(int timer_id) {
+    void update_random_quote_indexes(int timer_id)
+    {
         int quote_index = timer_state[timer_id] == TimeOptions::WorkTime ? rand() % NUM_QUOTES : rand() % NUM_QUOTES;
         quote_ids[timer_id] = quote_index;
     }
     
     // Returns random quote from vectors
-    std::string get_quote(int timer_id) {
-        return timer_state[timer_id] == TimeOptions::WorkTime ? work_quotes[quote_ids[timer_id]] : break_quotes[quote_ids[timer_id]];
+    std::string get_quote(int timer_id)
+    {
+      return timer_state[timer_id] == TimeOptions::WorkTime
+                 ? work_quotes[quote_ids[timer_id]]
+                 : break_quotes[quote_ids[timer_id]];
     }
     
     // This method gets the current float value of current timer mode
@@ -134,12 +141,14 @@ private:
     }
     
     // This method gets the random quote depending on current timer mode
-    void update_time_option(int timer_id) {
+    void update_time_option(int timer_id)
+    {
         TimeOptions time_options = timer_state[timer_id];
-        switch (time_options) {
+        switch (time_options)
+        {
             case ShortBreak:
                 time_options = TimeOptions::WorkTime;
-                timer_break_conters[timer_id] = timer_break_conters[timer_id]++;
+                timer_break_counters[timer_id] = timer_break_counters[timer_id]++;
                 break;
                 
             case LongBreak:
@@ -147,10 +156,13 @@ private:
                 break;
                 
             case WorkTime:
-                if (timer_break_conters[timer_id] == 3) {
+                if (timer_break_counters[timer_id] == 3)
+                {
                     time_options = TimeOptions::LongBreak;
-                    timer_break_conters[timer_id] = 0;
-                } else {
+                    timer_break_counters[timer_id] = 0;
+                }
+                else
+                {
                     time_options = TimeOptions::ShortBreak;
                 }
                 break;
@@ -166,7 +178,8 @@ public:
     //MARK: - Main public methods
     
     // Starts timer instance by initializing the console and printing values
-    void start() {
+    void start()
+    {
         
         // Init random quotes and timer states
         init_random_quotes();
@@ -222,7 +235,8 @@ public:
     }
     
     // Resets the clock and activate next timer mode
-    void restart(int timer_id) {
+    void restart(int timer_id)
+    {
         const char *time = formatted_time(get_current_timer(timer_id)).c_str();
         parse_time_arg(time, timer_id);
     }
@@ -278,30 +292,33 @@ public:
         }
     }
     
-    void key_event(void) {
+    void key_event(void)
+    {
         int i, c;
         
         struct timespec length = { 1, 0 };
         
-        switch(c = wgetch(stdscr)) {
-            case 'q':
-            case 'Q':
-                ttyclock->running = false;
-                ttyclock->interupted = true;
-                break;
-                
-            default:
-                nanosleep(&length, NULL);
-                
-                for (i = 0; i < 8; ++i) {
-                    if (c == (i + '0')) {
-                        timers_execution_vector[i - 1] = !timers_execution_vector[i - 1];
-                    }
+        switch(c = wgetch(stdscr))
+        {
+        case 'q':
+        case 'Q':
+            ttyclock->running = false;
+            ttyclock->interupted = true;
+            break;
+        case ' ':
+            timers_execution_vector[0] = !timers_execution_vector[0];
+        default:
+            nanosleep(&length, NULL);
+            
+            for (i = 0; i < 8; ++i)
+            {
+                if (c == (i + '0'))
+                {
+                    timers_execution_vector[i - 1] = !timers_execution_vector[i - 1];
                 }
-                
-                break;
+            }
+            
+            break;
         }
     }
 };
-
-#endif /* ao_tty_timer_hpp */

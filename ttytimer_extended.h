@@ -232,7 +232,7 @@ void init() {
         
         if (ttyclock->option.bold) wattron(cur_window, A_BLINK);
         
-        timers_execution_vector.push_back(true);
+        timers_execution_vector.push_back(false);
         
         //        date val;
         dates_of_timers.push_back(new date());
@@ -274,7 +274,8 @@ void cleanup(void) {
 }
 
 /* Decrements ttyclock's time by 1 second. */
-void update_hour(int timer_id) {
+void update_hour(int timer_id)
+{
     date *cur_date = dates_of_timers[timer_id];
     bool status = timers_execution_vector[timer_id];
     
@@ -285,7 +286,8 @@ void update_hour(int timer_id) {
     unsigned int hours = cur_date->hour[0] * 10
     + cur_date->hour[1];
     
-    if (status) {
+    if (status)
+    {
         if (minutes == 0 && seconds == 0) hours = hours == 0 ? 59 : hours - 1;
         if (seconds == 0) minutes = minutes == 0 ? 59 : minutes - 1;
         seconds = seconds == 0 ? 59 : seconds - 1;
@@ -412,7 +414,8 @@ static void fill_ttyclock_time(int *digits, unsigned int *time) {
     }
 }
 
-static void parse_time_arg(const char *time, int timer_id) {
+static void parse_time_arg(const char *time, int timer_id)
+{
     int digits[N_TIME_DIGITS];
     for (int i = 0; i < N_TIME_DIGITS; ++i) digits[i] = -1;
     

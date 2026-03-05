@@ -53,6 +53,13 @@ private:
     // Float values storing the timer's time intervals
     // for work and breaks.
     std::vector<User> users_time_arguments;
+
+    // Command to run with system() after each timer ends.
+    std::string timer_end_command;
+    // This tracks whether restart() has been called for the first time, because
+    // it runs on startup, and we don't want the command to be run before the
+    // timer even begins.
+    int first_time_cycle = 0;
     
     // Counter used to identify when to shoot long break
     int num_of_timers;
@@ -72,7 +79,8 @@ private:
     {
         "Keep pushing!",
         "You can do it!",
-        "Do work. Now!",
+        // "My unmatched perspicacity coupled with my sheer indefatigability makes me a feared opponent in any realm of human endeavor.",
+        "Doubting yourself makes everything harder.",
         "Just do it!",
         "Keep pushing!"
     };
@@ -81,7 +89,7 @@ private:
     const std::string break_quotes[NUM_QUOTES]
     {
         "Saying your own name out loud should make you feel motivated and excited.",
-        "Get some coffee!",
+        "Dong Jing",
         "Relax for a bit.",
         "Go have a power nap!"
         "Look in the mirror and relax."
@@ -92,14 +100,16 @@ private:
     {
         timer_state.clear();
         timer_break_counters.clear();
-        for (int i = 0; i < num_of_timers; i++) {
+        for (int i = 0; i < num_of_timers; i++)
+        {
             timer_state.emplace(i, TimeOptions::ShortBreak);
             timer_break_counters.push_back(0);
         }
     }
     
     // This method updates the random quotes vector depending on current timer mode
-    void init_random_quotes() {
+    void init_random_quotes()
+    {
         quote_windows.clear();
         for (int i = 0; i < num_of_timers; i++) {
             std::string quote = work_quotes[rand() % NUM_QUOTES];
@@ -124,11 +134,12 @@ private:
     }
     
     // This method gets the current float value of current timer mode
-    float get_current_timer(int timer_id) {
-        
+    float get_current_timer(int timer_id)
+    {
         User current_user_arguments = users_time_arguments[timer_id];
         
-        switch (timer_state[timer_id]) {
+        switch (timer_state[timer_id])
+        {
             case ShortBreak:
                 return current_user_arguments.sh;
                 
@@ -138,6 +149,10 @@ private:
             case WorkTime:
                 return current_user_arguments.ti;
         }
+
+        // We should never reach this point, one of the switch cases should
+        // always activate. This is just to quiet the compiler warning.
+        return 0.0f;
     }
     
     // This method gets the random quote depending on current timer mode
@@ -173,72 +188,88 @@ private:
 public:
     
     //MARK: - Constructors
-    PomodoroTimer(int num_of_timers, std::vector<User> users_time_arguments) : num_of_timers(num_of_timers), users_time_arguments(users_time_arguments) {}
-    
-    //MARK: - Main public methods
-    
-    // Starts timer instance by initializing the console and printing values
+  PomodoroTimer(int num_of_timers, std::vector<User> users_time_arguments, std::string timer_end_command)
+      : num_of_timers(num_of_timers),
+        users_time_arguments(users_time_arguments),
+        timer_end_command(timer_end_command)
+    {}
+
+  // MARK: - Main public methods
+
+  // Starts timer instance by initializing the console and printing values
     void start()
     {
-        
         // Init random quotes and timer states
         init_random_quotes();
         init_timer_states();
-        
+
         // Init ttyclock_t from ttytimer_extended.h
-        ttyclock = static_cast<ttyclock_t*>(malloc(sizeof(ttyclock_t)));
+        ttyclock = static_cast<ttyclock_t *>(malloc(sizeof(ttyclock_t)));
         assert(ttyclock != NULL);
         memset(ttyclock, 0, sizeof(ttyclock_t));
-        
+
         /* Set number of timers*/
         ttyclock->num_of_timers = this->num_of_timers;
-        
+
         /* Default color */
         ttyclock->option.color = COLOR_GREEN; /* COLOR_GREEN = 2 */
-        
+
         atexit(cleanup);
-        
+
         /* Ensure input is anything but 0. */
-        for (auto const& x : timers_map) {
+        for (auto const &x : timers_map)
+        {
             float time = users_time_arguments[x.first].ti;
             const char *str_time = formatted_time(time).c_str();
-            
+
             update_random_quote_indexes(x.first);
             parse_time_arg(str_time, x.first);
-            
-            if (time_is_zero(x.first)) {
+
+            if (time_is_zero(x.first))
+            {
                 puts("Time argument is zero");
                 exit(EXIT_FAILURE);
             }
         }
-        
-        // Call method init from ttytimer_t to instantiate required ncurses methods and prepare console.
+
+        // Call method init from ttytimer_t to instantiate required ncurses methods
+        // and prepare console.
         init();
         attron(A_BLINK);
-        
+
         // Defines main while loop of control cycle
-        while (ttyclock->running) {
+        while (ttyclock->running)
+        {
             draw_clock();
             key_event();
-            for (auto const& x : timers_map)
+            for (auto const &x : timers_map)
             {
-                if (!time_is_zero(x.first)) update_hour(x.first);
-                else {
+                if (!time_is_zero(x.first))
+                    update_hour(x.first);
+                else
+                {
                     update_time_option(x.first);
                     update_random_quote_indexes(x.first);
                     restart(x.first);
                 }
             }
         }
-        
+
         endwin();
     }
     
     // Resets the clock and activate next timer mode
     void restart(int timer_id)
     {
-        const char *time = formatted_time(get_current_timer(timer_id)).c_str();
-        parse_time_arg(time, timer_id);
+
+        if (first_time_cycle >= 1)
+            system((timer_end_command + " > /dev/null 2>&1").c_str());
+        first_time_cycle++;
+
+        for (auto &&timer : timers_execution_vector)
+             timer = false;
+
+        parse_time_arg(formatted_time(get_current_timer(timer_id)).c_str(), timer_id);
     }
     
     // Modified code from ttytimer.h that sets the custom quotes
@@ -286,8 +317,8 @@ public:
             
             
             wbkgdset(quote_window, (COLOR_PAIR(2)));
-            mvwprintw(quote_window, (DATEWINH / 2), 1, "                        ");
-            mvwprintw(quote_window, (DATEWINH / 2), 1, get_quote(x.first).c_str());
+            mvwprintw(quote_window, (DATEWINH / 2), 1, "=");
+            mvwprintw(quote_window, (DATEWINH / 2), 1, "%s", get_quote(x.first).c_str());
             wrefresh(quote_window);
         }
     }
@@ -305,7 +336,12 @@ public:
             ttyclock->running = false;
             ttyclock->interupted = true;
             break;
+        case 'p':
+            if (first_time_cycle > 1)
+                system((timer_end_command + " > /dev/null 2>&1").c_str());
+            break;
         case ' ':
+            // Toggle pause
             timers_execution_vector[0] = !timers_execution_vector[0];
         default:
             nanosleep(&length, NULL);
@@ -314,6 +350,7 @@ public:
             {
                 if (c == (i + '0'))
                 {
+                    // Toggle pause
                     timers_execution_vector[i - 1] = !timers_execution_vector[i - 1];
                 }
             }

@@ -17,16 +17,18 @@ using namespace std;
 void PrintHelp()
 {
     std::cout <<
-    "--num-timers|n [n]:    Set number of timers to be executed\n"
-    "--user:              Specify short break, long break and timer time in following format {$0:$1:$2}\n"
-    "--help:              Show help\n";
+    "--timer-end-command|-c  Command to run after each timer completes a cycle"
+    "--num-timers|-n [n]:    Set number of timers to be executed\n"
+    "--user:                 Specify short break, long break and timer time in following format {$0:$1:$2}\n"
+    "--help:                 Show help\n";
     exit(1);
 }
 
 //MARK: - Main function
 bool IsTerminalAvailable = false;
 
-int main(int argc, char ** argv) {
+int main(int argc, char ** argv)
+{
     
     // Number of timers
     int number_of_timers = 0;
@@ -35,6 +37,7 @@ int main(int argc, char ** argv) {
     const char* const short_opts = "n:u";
     const option long_opts[] =
     {
+        {"timer-end-command", 1, nullptr, 'c'},
         {"num_timers", 1, nullptr, 'n'},
         {"user", 1, nullptr, 'u'},
         {"help", 0, nullptr, 'h'},
@@ -43,16 +46,21 @@ int main(int argc, char ** argv) {
     
     // Vector of users, each user is a simple struct holding individual time options.
     vector<User> users;
-    
+
+    std::string timer_end_command = "";
+
     while (true)
     {
         const auto opt = getopt_long(argc, argv, short_opts, long_opts, nullptr);
         
         if (-1 == opt)
             break;
-        
+
         switch (opt)
         {
+            case 'c':
+                timer_end_command = optarg;
+                break;
             case 'n':
                 number_of_timers = stoi(optarg);
                 if (number_of_timers > 5)
@@ -84,7 +92,7 @@ int main(int argc, char ** argv) {
     
     if (number_of_timers == 0)
         number_of_timers = 1;
-    
+
     if (users.size() != number_of_timers)
     {
         for (size_t i = users.size() ; i < number_of_timers; i++)
@@ -98,7 +106,7 @@ int main(int argc, char ** argv) {
         cout << t.sh << " : " << t.lo << " : " << t.ti << " : " << endl;
     }
     
-    PomodoroTimer timer = PomodoroTimer(number_of_timers, users);
+    PomodoroTimer timer = PomodoroTimer(number_of_timers, users, timer_end_command);
     timer.start();
     
     return 0;

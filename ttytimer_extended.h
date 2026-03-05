@@ -45,11 +45,12 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <map>
+#include <vector>
 
 /* Macro */
 #define NORMFRAMEW 35
 #define SECFRAMEW  54
-#define DATEWINH   3
+#define DATEWINH   9
 /* Maximum number of digits in a time string, hh:mm:ss. */
 #define N_TIME_DIGITS 6
 
@@ -219,7 +220,7 @@ void init() {
         if (ttyclock->option.box) box(cur_window, 0, 0);
         timers_map.emplace(i, cur_window);
         
-        WINDOW *quotewin = newwin(DATEWINH, 16 + 2,
+        WINDOW *quotewin = newwin(DATEWINH, 15,
                                   ttyclock->geo.x + ttyclock->geo.h - 1,
                                   ttyclock->geo.y + (ttyclock->geo.w / 2) -
                                   (16 / 2) - 1);
